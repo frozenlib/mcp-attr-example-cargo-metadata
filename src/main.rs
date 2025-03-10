@@ -28,6 +28,11 @@ impl ServerData {
             let mut cmd = MetadataCommand::new();
             if let Some(path) = manifest_path {
                 cmd.manifest_path(path);
+            } else {
+                bail_public!(
+                    ErrorCode::INVALID_REQUEST,
+                    "manifest_path must be specified"
+                );
             }
             match cmd.exec() {
                 Ok(metadata) => self.metadata = Some(metadata),
@@ -77,7 +82,7 @@ impl McpServer for CargoMetadataServer {
     /// プロジェクトのメタデータを取得します
     ///
     /// 指定されたCargoプロジェクトのメタデータを取得します。
-    /// manifest_pathを指定しない場合は、カレントディレクトリのCargo.tomlを使用します。
+    /// manifest_pathには、Cargo.tomlファイルへの絶対パスを指定する必要があります。
     #[tool]
     async fn get_metadata(&self, manifest_path: Option<String>) -> Result<String> {
         let mut state = self.0.lock().unwrap();
@@ -97,7 +102,7 @@ impl McpServer for CargoMetadataServer {
     /// プロジェクトのパッケージ情報を取得します
     ///
     /// 指定されたCargoプロジェクトのパッケージ情報を取得します。
-    /// manifest_pathを指定しない場合は、カレントディレクトリのCargo.tomlを使用します。
+    /// manifest_pathには、Cargo.tomlファイルへの絶対パスを指定する必要があります。
     #[tool]
     async fn get_package_info(&self, manifest_path: Option<String>) -> Result<String> {
         let mut state = self.0.lock().unwrap();
@@ -134,7 +139,7 @@ impl McpServer for CargoMetadataServer {
     /// プロジェクトの依存関係リストを取得します
     ///
     /// 指定されたCargoプロジェクトの依存関係リストを取得します。
-    /// manifest_pathを指定しない場合は、カレントディレクトリのCargo.tomlを使用します。
+    /// manifest_pathには、Cargo.tomlファイルへの絶対パスを指定する必要があります。
     #[tool]
     async fn get_dependencies(&self, manifest_path: Option<String>) -> Result<String> {
         let mut state = self.0.lock().unwrap();
@@ -161,7 +166,7 @@ impl McpServer for CargoMetadataServer {
     /// プロジェクトのビルドターゲットを取得します
     ///
     /// 指定されたCargoプロジェクトのビルドターゲットを取得します。
-    /// manifest_pathを指定しない場合は、カレントディレクトリのCargo.tomlを使用します。
+    /// manifest_pathには、Cargo.tomlファイルへの絶対パスを指定する必要があります。
     #[tool]
     async fn get_targets(&self, manifest_path: Option<String>) -> Result<String> {
         let mut state = self.0.lock().unwrap();
@@ -186,7 +191,7 @@ impl McpServer for CargoMetadataServer {
     /// プロジェクトのワークスペース情報を取得します
     ///
     /// 指定されたCargoプロジェクトのワークスペース情報を取得します。
-    /// manifest_pathを指定しない場合は、カレントディレクトリのCargo.tomlを使用します。
+    /// manifest_pathには、Cargo.tomlファイルへの絶対パスを指定する必要があります。
     #[tool]
     async fn get_workspace_info(&self, manifest_path: Option<String>) -> Result<String> {
         let mut state = self.0.lock().unwrap();
@@ -212,7 +217,7 @@ impl McpServer for CargoMetadataServer {
     /// プロジェクトのフィーチャー情報を取得します
     ///
     /// 指定されたCargoプロジェクトのフィーチャー情報を取得します。
-    /// manifest_pathを指定しない場合は、カレントディレクトリのCargo.tomlを使用します。
+    /// manifest_pathには、Cargo.tomlファイルへの絶対パスを指定する必要があります。
     #[tool]
     async fn get_features(&self, manifest_path: Option<String>) -> Result<String> {
         let mut state = self.0.lock().unwrap();
@@ -254,4 +259,28 @@ fn get_dependencies(package: &Package, metadata: &Metadata) -> Vec<DependencyInf
             }
         })
         .collect()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use std::path::PathBuf;
+
+    #[test]
+    fn test_get_metadata_requires_manifest_path() {
+        let mut server_data = ServerData::new();
+        let result = server_data.get_metadata(None);
+
+        assert!(result.is_err());
+        // エラーが発生することのみを確認
+    }
+
+    #[test]
+    fn test_get_metadata_with_invalid_path() {
+        let mut server_data = ServerData::new();
+        let result = server_data.get_metadata(Some(PathBuf::from("non_existent_path/Cargo.toml")));
+
+        assert!(result.is_err());
+        // エラーが発生することのみを確認
+    }
 }
