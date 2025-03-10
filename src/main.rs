@@ -3,7 +3,7 @@ use std::sync::Mutex;
 
 use cargo_metadata::{Metadata, MetadataCommand, Package};
 use mcp_attr::server::{McpServer, mcp_server, serve_stdio};
-use mcp_attr::{Result, bail};
+use mcp_attr::{ErrorCode, Result, bail_public};
 use serde::Serialize;
 
 #[tokio::main]
@@ -31,7 +31,11 @@ impl ServerData {
             }
             match cmd.exec() {
                 Ok(metadata) => self.metadata = Some(metadata),
-                Err(e) => bail!("Failed to get cargo metadata: {}", e),
+                Err(e) => bail_public!(
+                    ErrorCode::INTERNAL_ERROR,
+                    "Failed to get cargo metadata: {}",
+                    e
+                ),
             }
         }
         Ok(self.metadata.as_ref().unwrap())
@@ -82,7 +86,11 @@ impl McpServer for CargoMetadataServer {
 
         match serde_json::to_string_pretty(metadata) {
             Ok(json) => Ok(json),
-            Err(e) => bail!("Failed to serialize metadata: {}", e),
+            Err(e) => bail_public!(
+                ErrorCode::INTERNAL_ERROR,
+                "Failed to serialize metadata: {}",
+                e
+            ),
         }
     }
 
@@ -98,7 +106,7 @@ impl McpServer for CargoMetadataServer {
 
         let root_package = match metadata.root_package() {
             Some(pkg) => pkg,
-            None => bail!("No root package found"),
+            None => bail_public!(ErrorCode::INTERNAL_ERROR, "No root package found"),
         };
 
         let dependencies = get_dependencies(root_package, metadata);
@@ -115,7 +123,11 @@ impl McpServer for CargoMetadataServer {
 
         match serde_json::to_string_pretty(&package_info) {
             Ok(json) => Ok(json),
-            Err(e) => bail!("Failed to serialize package info: {}", e),
+            Err(e) => bail_public!(
+                ErrorCode::INTERNAL_ERROR,
+                "Failed to serialize package info: {}",
+                e
+            ),
         }
     }
 
@@ -131,14 +143,18 @@ impl McpServer for CargoMetadataServer {
 
         let root_package = match metadata.root_package() {
             Some(pkg) => pkg,
-            None => bail!("No root package found"),
+            None => bail_public!(ErrorCode::INTERNAL_ERROR, "No root package found"),
         };
 
         let dependencies = get_dependencies(root_package, metadata);
 
         match serde_json::to_string_pretty(&dependencies) {
             Ok(json) => Ok(json),
-            Err(e) => bail!("Failed to serialize dependencies: {}", e),
+            Err(e) => bail_public!(
+                ErrorCode::INTERNAL_ERROR,
+                "Failed to serialize dependencies: {}",
+                e
+            ),
         }
     }
 
@@ -154,12 +170,16 @@ impl McpServer for CargoMetadataServer {
 
         let root_package = match metadata.root_package() {
             Some(pkg) => pkg,
-            None => bail!("No root package found"),
+            None => bail_public!(ErrorCode::INTERNAL_ERROR, "No root package found"),
         };
 
         match serde_json::to_string_pretty(&root_package.targets) {
             Ok(json) => Ok(json),
-            Err(e) => bail!("Failed to serialize targets: {}", e),
+            Err(e) => bail_public!(
+                ErrorCode::INTERNAL_ERROR,
+                "Failed to serialize targets: {}",
+                e
+            ),
         }
     }
 
@@ -181,7 +201,11 @@ impl McpServer for CargoMetadataServer {
 
         match serde_json::to_string_pretty(&workspace_members) {
             Ok(json) => Ok(json),
-            Err(e) => bail!("Failed to serialize workspace members: {}", e),
+            Err(e) => bail_public!(
+                ErrorCode::INTERNAL_ERROR,
+                "Failed to serialize workspace members: {}",
+                e
+            ),
         }
     }
 
@@ -197,12 +221,16 @@ impl McpServer for CargoMetadataServer {
 
         let root_package = match metadata.root_package() {
             Some(pkg) => pkg,
-            None => bail!("No root package found"),
+            None => bail_public!(ErrorCode::INTERNAL_ERROR, "No root package found"),
         };
 
         match serde_json::to_string_pretty(&root_package.features) {
             Ok(json) => Ok(json),
-            Err(e) => bail!("Failed to serialize features: {}", e),
+            Err(e) => bail_public!(
+                ErrorCode::INTERNAL_ERROR,
+                "Failed to serialize features: {}",
+                e
+            ),
         }
     }
 }
